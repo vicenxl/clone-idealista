@@ -1,4 +1,5 @@
 from aws_cdk import (
+    Stack,
     aws_s3 as s3,
     aws_lambda as _lambda,
     aws_dynamodb as dynamodb,
@@ -7,10 +8,11 @@ from aws_cdk import (
     aws_apigateway as apigateway,
     aws_iam as iam,
 )
+from constructs import Construct
 
-class IdealistaCloneStack(core.Stack):
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+class IdealistaCloneStack(Stack):
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
 
         # Bucket para imágenes
         bucket = s3.Bucket(self, "IdealistaImagesBucket", versioned=True,  )
@@ -30,9 +32,10 @@ class IdealistaCloneStack(core.Stack):
         process_image_lambda = _lambda.Function(
             self,
             "ProcessImageLambda",
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            function_name="process_image",
+            runtime=_lambda.Runtime.NODEJS_22_X,
             handler="process_image.handler",
-            code=_lambda.Code.from_asset("lambda_functions/process_image"),
+            code=_lambda.Code.from_asset("idealista_clone/src/lambda/process_image"),
             environment={
                 "BUCKET_NAME": bucket.bucket_name,
                 "SNS_TOPIC_ARN": sns_topic.topic_arn,
@@ -47,9 +50,10 @@ class IdealistaCloneStack(core.Stack):
         contact_form_lambda = _lambda.Function(
             self,
             "ContactFormLambda",
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            function_name="contact_form",
+            runtime=_lambda.Runtime.NODEJS_22_X,
             handler="contact_form.handler",
-            code=_lambda.Code.from_asset("lambda_functions/contact_form"),
+            code=_lambda.Code.from_asset("idealista_clone/src/lambda//contact_form"),
             environment={
                 "CONTACT_TABLE": contact_table.table_name,
                 "SNS_TOPIC_ARN": sns_topic.topic_arn,

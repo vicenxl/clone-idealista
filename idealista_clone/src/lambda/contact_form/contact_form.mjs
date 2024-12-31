@@ -1,29 +1,35 @@
-import AWS from "aws-sdk";
+import { DynamoDBClient, DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const sns = new AWS.SNS();
+// Inicialización de clientes
+const dynamoClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const snsClient = new SNSClient({});
 
 export const handler = async (event) => {
   const contactTable = process.env.CONTACT_TABLE;
   const snsTopicArn = process.env.SNS_TOPIC_ARN;
 
+  console.log("Event received:", JSON.stringify(event));
+
   try {
     const data = JSON.parse(event.body);
 
     // Guardar en DynamoDB
-    await dynamodb.put({
+    const putCommand = new PutCommand({
       TableName: contactTable,
       Item: data,
-    }).promise();
-
+    });
+    await docClient.send(putCommand);
     console.log("Contact data saved:", data);
 
     // Notificar a SNS
-    await sns.publish({
+    const publishCommand = new PublishCommand({
       TopicArn: snsTopicArn,
       Subject: "New Contact Form Submission",
       Message: `New contact form submission: ${JSON.stringify(data)}`,
-    }).promise();
+    });
+    await snsClient.send(publishCommand);
 
     console.log("Notification sent");
 

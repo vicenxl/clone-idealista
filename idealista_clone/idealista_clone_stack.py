@@ -1,6 +1,7 @@
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
+    aws_s3_notifications as s3_notifications,
     aws_lambda as _lambda,
     aws_dynamodb as dynamodb,
     aws_sns as sns,
@@ -19,7 +20,7 @@ class IdealistaCloneStack(Stack):
 
         # SNS Topic para notificaciones por correo
         sns_topic = sns.Topic(self, "ImageUploadNotification")
-        sns_topic.add_subscription(subscriptions.EmailSubscription("user@example.com"))
+        sns_topic.add_subscription(subscriptions.EmailSubscription("vdiaz@avaloninformatica.com"))
 
         # DynamoDB para almacenar datos de contacto
         contact_table = dynamodb.Table(
@@ -42,6 +43,13 @@ class IdealistaCloneStack(Stack):
             },
         )
 
+        # Asocia la Lambda al evento de subida de objetos en el bucket
+        bucket.add_event_notification(
+            s3.EventType.OBJECT_CREATED,  # Evento de subida de archivos
+            s3_notifications.LambdaDestination(process_image_lambda),
+            s3.NotificationKeyFilter(prefix="uploads/")
+        )
+
         # Permisos para Lambda
         bucket.grant_read_write(process_image_lambda)
         sns_topic.grant_publish(process_image_lambda)
@@ -53,7 +61,7 @@ class IdealistaCloneStack(Stack):
             function_name="contact_form",
             runtime=_lambda.Runtime.NODEJS_22_X,
             handler="contact_form.handler",
-            code=_lambda.Code.from_asset("idealista_clone/src/lambda//contact_form"),
+            code=_lambda.Code.from_asset("idealista_clone/src/lambda/contact_form"),
             environment={
                 "CONTACT_TABLE": contact_table.table_name,
                 "SNS_TOPIC_ARN": sns_topic.topic_arn,

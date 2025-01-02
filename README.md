@@ -30,7 +30,7 @@ The `IdealistaCloneStack` sets up the following resources:
 
 ## Architecture
 
-![Architecture Diagram](https://source.unsplash.com/random/800x400?architecture)
+![Architecture Diagram](app_diagram.png)
 
 1. Users upload images to the S3 bucket.
 2. The `process_image` Lambda is triggered by new uploads and sends notifications via SNS.
